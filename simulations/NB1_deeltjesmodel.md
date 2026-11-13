@@ -483,7 +483,7 @@ Test wederom je code door de vernieuwde functie hierboven te plakken.
 def update(frame):
     particle.update_position()
     if abs(particle.r[0]) >= 10:
-        particle.r[0] = np.sign(particle.r[0]) *  (np.abs(particle.r[0]) - (np.abs(particle.r[0]) - 10))
+        particle.r[0] = np.sign(particle.r[0]) *  (20 - np.abs(particle.r[0]))
         particle.v[0] = - particle.v[0]
         
     dot.set_data([particle.r[0]], [particle.r[1]])
@@ -527,7 +527,7 @@ def update(frame):
 
     for i in range(2):
         if abs(particle.r[i]) >= 10:
-            particle.r[i] = np.sign(particle.r[i]) *  (np.abs(particle.r[i]) - (np.abs(particle.r[i]) - 10))
+            particle.r[i] = np.sign(particle.r[i]) *  (20 - np.abs(particle.r[i]))
             particle.v[i] = - particle.v[i]
     
     dot.set_data([particle.r[0]], [particle.r[1]])
