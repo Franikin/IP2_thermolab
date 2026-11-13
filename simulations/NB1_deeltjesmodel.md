@@ -15,7 +15,10 @@ Als startopdracht modelleren we twee fietsers. Doorloop de bovenstaande drie sta
 
 
 
-## Numerieke modellen
+## 
+
+
+Numerieke modellen
 Om een simulatie te maken, splitsen we het volledige proces op in kleine stappen met een vaste (tijd)interval, zoals in onderstaande figuur. Elk stapje krijgt een nummer, van $0$ tot $N$. We gebruiken de letter $i$ om naar een specifieke stap te verwijzen.
 
 De gegevens in stap $i$ worden gebruikt om de waarden in stap $i+1$ te berekenen, bijvoorbeeld:
@@ -34,9 +37,14 @@ We nemen als voorbeeld twee fietsers, waarbij de fietser 1 een eenparige bewegin
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
+```
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Beginwaarden
-dt = 0.25                  #s
+dt = 0.25                 #s
 t_e = 10                   #s
 N = int(t_e/dt)+1
 t = np.arange(0,t_e+dt,dt) #s
@@ -81,7 +89,7 @@ Maak het tijdsinterval $dt$ groter en vergelijk de afgelegde weg in de tien seco
 <!-- Jouw antwoord hier  -->
 
 ```python
-%reset -f  #clears memory as we don't need it further down 
+%reset -f 
 ```
 
 ## Naar een deeltjesmodel
@@ -230,6 +238,19 @@ En als je wilt gaan voor een uitdaging:
 
 ```python
 ### YOUR CODE HERE ###
+particle_array_2 = []
+dt_2 = 0.2
+m_2 = 5.0
+R_2 = 1.0
+
+for i in range(10):
+    particle_array_2.append(ParticleClass(m=m_2, v=[np.random.randint(-5,6),0], r=[i+1,0], R=R_2))
+    particle_array_2[i].update_position(dt_2)
+
+fig,axs = plt.subplots(1,)
+for particle in particle_array_2:
+    axs.plot(particle.r[0],particle.r[1],'.')
+plt.show()
 ```
 
 Onze simulaties worden snel “zwaar”. Er moeten veel berekeningen gedaan worden en dat kost nu eenmaal tijd. Nu is het wel zo dat sommige berekeningen meer tijd kosten dan anderen. Om te kijken of een stukje code geoptimaliseerd kan worden, moeten we een timer maken. Dat kan met onderstaande code:
@@ -272,7 +293,16 @@ De runtime is {eval}`<naam variabele>` korter.
 ```
 
 ```python
+start = time.time()
 
+N = int(1e5)
+
+snel_array = np.random.rand(N)
+
+eind = time.time()
+lengte = eind - start
+
+print("Dit kostte ", lengte, "seconde!")
 ```
 
 ## Aan de slag met deeltjes
@@ -406,6 +436,9 @@ def init():
 # Update function for each frame
 def update(frame):
     particle.update_position()
+    if abs(particle.r[0]) >= 10:
+        particle.r[0] = np.sign(particle.r[0]) *  (np.abs(particle.r[0]) - (np.abs(particle.r[0]) - 10))
+        particle.v[0] = - particle.v[0]
     dot.set_data([particle.r[0]], [particle.r[1]])
     return dot,
 
@@ -431,7 +464,9 @@ Controleer je eigen antwoord door de functie hierboven even te vervangen door de
 # doorlopende doos
 def update(frame):
     particle.update_position()
+    particle.r = (particle.r + 10) % 20 - 10
     dot.set_data([particle.r[0]], [particle.r[1]])
+        
 ### YOUR CODE HERE ###
     return dot,         
 ```
@@ -447,6 +482,10 @@ Test wederom je code door de vernieuwde functie hierboven te plakken.
 # harde wanden
 def update(frame):
     particle.update_position()
+    if abs(particle.r[0]) >= 10:
+        particle.r[0] = np.sign(particle.r[0]) *  (np.abs(particle.r[0]) - (np.abs(particle.r[0]) - 10))
+        particle.v[0] = - particle.v[0]
+        
     dot.set_data([particle.r[0]], [particle.r[1]])
 ### YOUR CODE HERE ###
     return dot,
@@ -462,7 +501,7 @@ Verander nu de code zodanig dat de beginsnelheid gegeven wordt door $\vec{v}=5\h
 # Simulation parameters
 dt = 0.1         # time step
 num_steps = 500  # number of time steps
-
+particle = ParticleClass(m=1.0, v=[5.0, 3], r=[0.0, 0.0],R=1.0)
 ### YOUR CODE HERE ###
 
 # Create the figure and axis
@@ -485,6 +524,12 @@ def init():
 # Update function for each frame
 def update(frame):
     particle.update_position()
+
+    for i in range(2):
+        if abs(particle.r[i]) >= 10:
+            particle.r[i] = np.sign(particle.r[i]) *  (np.abs(particle.r[i]) - (np.abs(particle.r[i]) - 10))
+            particle.v[i] = - particle.v[i]
+    
     dot.set_data([particle.r[0]], [particle.r[1]])
     ### YOUR CODE HERE ###
     return dot,
