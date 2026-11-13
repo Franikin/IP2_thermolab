@@ -573,10 +573,27 @@ class ParticleClass:
 
 
 ```python
+# Maken van de class met versnelling
+class ParticleClass:
+    def __init__(self, m, v, r, R):
+        self.m = m                         # mass of the particle
+        self.v = np.array(v, dtype=float)  # velocity vector
+        self.r = np.array(r, dtype=float)  # position vector
+        self.R = R                         # radius of the particle
+
+    def update_position(self):
+        self.r += self.v * dt
+    
+    def update_velocity(self, a):
+        self.v += a*dt
+```
+
+```python
 
 # Simulation parameters
 dt = 0.1         # time step
 num_steps = 500  # number of time steps
+a = np.array([0,-9.81])
 particle = ParticleClass(m=1.0, v=[5.0, 0], r=[0.0, 0.0],R=1.0)  
 ### YOUR CODE HERE ###
 # Create the figure and axis
@@ -601,6 +618,11 @@ def update(frame):
     particle.update_velocity(a)
     particle.update_position()
     
+    for i in range(2):
+        if abs(particle.r[i]) >= 10:
+            particle.r[i] = np.sign(particle.r[i]) *  (20 - np.abs(particle.r[i]))
+            particle.v[i] = - particle.v[i]
+    
     dot.set_data([particle.r[0]], [particle.r[1]])
     ### YOUR CODE HERE ###
     return dot,
@@ -622,7 +644,7 @@ Herinner wat we in Q1 hebben gedaan bij de basics van een numerieke simulatie...
 ```
 
 ```{solution} ex-deeltjesmodel-6
-Jouw antwoord hier...
+Doordat de simulatie een benadering is schommelt de max hoogte en dus ook de totale energie in het systeem.
 ```
 
 Een optie om de simulatie te verbeteren is de tijdstap $\Delta t$ kleiner te maken, maar dan hebben we ook meer geduld meer nodig - het aantal berekeningen schaalt met $\frac{1}{\Delta t}$. Een tweede optie is een meer directe oplossing: We weten dat $a = \mathrm{const.}$ en daarom weten we ook de bewegingsvergelijking van het deeltje!
@@ -648,7 +670,7 @@ class ParticleClass:
 # Simulation parameters
 dt = 0.1         
 num_steps = 500  
-particle = ParticleClass(m=1.0, v=[0, 0], r=[0.0, 0.0],R=1.0)  
+particle = ParticleClass(m=1.0, v=[2, 1], r=[-1, 0.0],R=1.0)  
 a = np.array([0.0, -5.0])  
 
 track_x = []
@@ -708,8 +730,10 @@ Maak de code hieronder voor twee deeltjes die bewegen in een afgesloten doos. Be
 # Simulation parameters
 dt = 0.1         # time step
 num_steps = 500  # number of time steps
-particleA = ParticleClass(m=1.0, v=[0, 0], r=[0.0, 0.0],R=1.0)  
+particleA = ParticleClass(m=1.0, v=[2, 0], r=[0.0, 0.0],R=1.0)  
 ### YOUR CODE HERE ###
+particleB = ParticleClass(m=1.0, v=[-1, 1], r=[1.0, 1.0],R=1.0)
+
 
 track_x = []
 track_y = []
@@ -740,6 +764,9 @@ def update(frame):
 
 ### YOUR CODE HERE ###
 
+    particleB.update_position()
+    particleB.update_velocity(a)
+    
     track_x.append(particleA.r[0])
     track_y.append(particleA.r[1])
     track_line.set_data(track_x, track_y)
@@ -784,7 +811,7 @@ Nu je een beetje weet hoe een numeriek model werkt, hoe je boundaries kunt opgev
 ```
 
 ```{solution} ex-deeltjes_10
-Jouw antwoord.
+1. Afstand tussen de deeltjes is kleiner dan de stralen opgeteld: $\sqrt{(r_{2,x} - r_{1,x})^2+(r_{2,y} - r_{1,y})^2} < R_1 + R_2$ 
 ```
 
 ```python tags=["NB1_botsingsvoorwaarde"]
@@ -802,7 +829,10 @@ class ParticleClass:
         self.r += self.v * dt  
 
     def collide_detection(self, other):
-        ### YOUR CODE HERE ###
+        rr = self.R + other.R
+        dx = other.r[0] - self.r[0]
+        dy = other.r[1] - self.r[1]
+        
         return  dx**2+dy**2 < rr**2 
 ```
 
@@ -853,20 +883,21 @@ def update(frame):
     dotB.set_data([particleB.r[0]], [particleB.r[1]])
 
     # botsing tussen de deeltjes onderling
-    if particleA.collide_detection(particleB):
-        ### YOUR CODE HERE ###
+    approaching = np.dot(particleB.v - particleA.v, particleB.r - particleA.r) < 0
+    if particleA.collide_detection(particleB) and approaching:
+        particleA.v, particleB.v = particleB.v.copy(), particleA.v.copy()
 
 
     # botsing met de wand
-    if particleA.r[0]**2>100: 
+    if particleA.r[0]**2>(10-particleA.R)**2: 
         particleA.v[0] = -particleA.v[0]
-    if particleA.r[1]**2>100: 
+    if particleA.r[1]**2>(10-particleA.R)**2:  
         particleA.v[1] = -particleA.v[1]
 
     dot.set_data([particleB.r[0]], [particleB.r[1]])
-    if particleB.r[0]**2>100: 
+    if particleB.r[0]**2>(10-particleB.R)**2: 
         particleB.v[0] = -particleB.v[0]
-    if particleB.r[1]**2>100: 
+    if particleB.r[1]**2>(10-particleB.R)**2: 
         particleB.v[1] = -particleB.v[1]
 
     return dot, track_line
@@ -933,7 +964,7 @@ Wat is de beperkende factor in ons script om het aantal botsingen als functie va
 ```
 
 ```{solution} ex-deeltjes-12
-Jouw antwoord
+dt, eindtijd
 ```
 
 
@@ -956,10 +987,10 @@ class ParticleClass:
         return np.linalg.norm(self.r - other.r) <= (self.R + other.R)
 
 # Simulation parameters
-dt = 0.1         # time step
-num_steps = 530  # number of time steps
+dt = 0.01         # time step
+num_steps = 5300  # number of time steps
 m1 = 1.0
-m2 = 1.0
+m2 = 10000.0
 
 particleA = ParticleClass(m=m1, v=[0, 0], r=[-4.0, 0.0],R=0.45)  
 particleB = ParticleClass(m=m2, v=[-1, 0], r=[-2.0, 0.0],R=0.45)  
@@ -1009,15 +1040,18 @@ def update(frame):
         particleA.v = vA_new
         particleB.v = vB_new
         ### YOUR CODE HERE ###
+        counter += 1
 
 
     # wall collision detection and response
     if particleA.r[0]**2>100: # Check if particle is outside the bounds, np.abs could be used but is slower
         particleA.v[0] = -particleA.v[0]
         ### YOUR CODE HERE ###
+        counter += 1
     if particleA.r[1]**2>100: 
         particleA.v[1] = -particleA.v[1]
         ### YOUR CODE HERE ###
+        counter += 1
 
     dot.set_data([particleB.r[0]], [particleB.r[1]])
     if particleB.r[0]**2>100: 
@@ -1044,6 +1078,7 @@ Pas de bovenstaande code aan zodat $m_1 = 1$ en $m_2 = 50$. Run de code en geef 
 ```python tags=["NB1_eindantwoord"]
 #num_botsingen = ...
 ### YOUR CODE HERE ###
+print("Botsingen: ", counter)
 ```
 
 ```{exercise}
