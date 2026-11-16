@@ -48,7 +48,13 @@ Als model gaan we uit van een deel van het volume van een fietsband die onder ee
 ```
 
 ```{solution} ex-recap-1
-### YOUR CODE HERE ###
+Er geldt $pV = Nk_BT$, waarin $N$ het aantal deeltjes is ($N=1 \; \mathrm{voor} \; V_{\mathrm{molecuul}}$)
+
+
+dus omgeschreven $V=\frac{k_BT}{p}$ invullen geeft:
+$V_{\mathrm{molecuul}}=\frac{1.38\cdot 10^{-23}\cdot 273}{10\cdot 10^5}=4.07 \cdot 10^{-27} m^3$
+
+dan is uiteindelijk $r = \sqrt[3]{4.07\cdot 10^{-27}}\approx 1.6 \; \mathrm{ nm}$
 ```
 
 De simulatie die we gaan maken bevat maar twee dimensies. We kunnen het oppervlak per deeltje in deze simulatie daarom kiezen als het zojuist berekende $V_\text{molecuul}^{2/3}$.
@@ -68,7 +74,7 @@ Ook deze heb je hierna nodig.
 ```
 
 ```{solution} ex-recap-2
-### YOUR CODE HERE ###
+T_{\mathrm{kamer}}=273.15 ~ \mathrm{K}
 ```
 
 ```{exercise} Radius
@@ -88,11 +94,11 @@ Bekijk de waarde van `DT`. Hoe zorgt deze waaarde ervoor dat het onwaarschijnlij
 Onze simulatie modelleert dus een klein systeem zonder rekening te houden met de kracht tussen de luchtmoleculen. Je zult zien dat we toch al behoorlijk wat van de processor vragen om deze berekeningen te doen. Om een meer realistische modelsimulatie te maken is daarom een serieuze uitdaging, die veel wiskunde en programmeerervaring vraagt. Op dit ogenblik wordt dit bijvoorbeeld gevraagd bij een van de eerste opdrachten van het vak 'Computational Physics' van de master Applied Physics. 
 
 ```python tags=["NB2_init"] editable=true slideshow={"slide_type": ""}
-BOX_SIZE_0 = 10                # Hoogte en lengte startvolume
+BOX_SIZE_0 = 10 # m            # Hoogte en lengte startvolume
 N = 40                         # Aantal deeltjes
-V_0 = 1                        # Startsnelheid van deeltjes
-RADIUS = 0.3                   # Straal van moleculen
-DT = 0.1 * RADIUS / V_0        # Tijdstap om geen botsing te missen
+V_0 = 1 # m/s                  # Startsnelheid van deeltjes
+RADIUS = 0.3 # m               # Straal van moleculen
+DT = 0.1 * RADIUS / V_0 # s    # Tijdstap om geen botsing te missen
 ```
 
 ### Particle class
