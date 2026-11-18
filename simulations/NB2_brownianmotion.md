@@ -74,7 +74,13 @@ Ook deze heb je hierna nodig.
 ```
 
 ```{solution} ex-recap-2
-T_{\mathrm{kamer}}=273.15 ~ \mathrm{K}
+$T_{\mathrm{kamer}}=273 ~ \mathrm{K}$
+voor 2 dimensies is $f=2$, dus $\frac{1}{2}m\left< v^2\right> = k_B T.$
+
+een gemiddeld gasmolecuul heeft een massa van $4,81 \times 10^{-26}$, rekening houdend met $21\% \, O_2$ en $78\%\, N_2$
+
+uiteindelijk is $\left< v \right> = \sqrt{\frac{2k_BT}{m}}=\sqrt{\frac{2\cdot 1.38\cdot 10^{-23}\cdot 273}{4,81 \times 10^{-26}}}=4.0\times 10^2 \; m\, s^{-1}$
+
 ```
 
 ```{exercise} Radius
@@ -83,7 +89,7 @@ In de python cell hieronder staan enkele waarden gegeven. Het aantal deeltjes $N
 ```
 
 ```{solution} ex-recap-3
-### YOUR CODE HERE ###
+
 ```
 
 ```{exercise} DT
@@ -189,8 +195,15 @@ Leg uit dat d.m.v. onderstaande code de deeltjes allemaal dezelfde snelheid hebb
 ```
 
 ```{solution} ex-recap-5
-Jouw antwoord hier...
-### YOUR CODE HERE ###
+De deeltjes hebben dezelfde snelheid, omdat er wordt gezegt dat:
+
+$v_x=\mathrm{Random\_uniform}(-v_0,v_0)$
+en $v_y = \pm \sqrt{v_0^2-v_x^2}$
+
+De laatste vergelijking kwadrateren zorgt ervoor dat $\pm$ niet uitmaakt (absolute snelheid) geeft:
+$v_y^2=v_0^2-v_x^2 \; \Rightarrow \; v_0^2=v_x^2+v_y^2$, dus dezelfde totale snelheid $v_o$ voor alle waardes
+
+Bij positie is de Box_size_0 de totale grootte, dus $\pm$Box_size_0/2 geeft de respectievelijke rechter en linker kanten van de box aan, hierin wordt nog radius vanaf getrokken (of aan de linker kant opgeteld) zodat een deeltje niet in de muur begint.
 ```
 
 ```python tags=["NB2_init"] editable=true slideshow={"slide_type": ""}
@@ -215,8 +228,7 @@ Leg uit hoe er in onderstaande code wordt voorkomen dat de botsing tussen twee d
 ```
 
 ```{solution} ex-recap-6
-Jouw antwoord hier...
-### YOUR CODE HERE ###
+Er wordt nadat de botsingen afgehandeld van deeltje 1 niet meer gecheckt op nieuwe botsingen met vorige deeltjes, alleen met hogere deeltjes. Er moet gelden $j>i$, dus alleen botsingen met een deeltje met een hogere waarde worden afgehandeld.
 ```
 
 ```python editable=true slideshow={"slide_type": ""} tags=["NB2_init"]
@@ -292,6 +304,7 @@ ax.set_ylabel('y')
 ax.set_xlim(-BOX_SIZE_0/2, BOX_SIZE_0/2)
 ax.set_ylim(-BOX_SIZE_0/2, BOX_SIZE_0/2)
 ax.set_aspect('equal')
+
 dot, = ax.plot([], [], 'ro', ms=13);
 
 def init():
@@ -325,10 +338,14 @@ create_particles(particles)
 for i in range(100):
     take_time_step(particles)
     # voeg de som van de kinetische energie in deze stap toe aan energy_tot 
-    ### YOUR CODE HERE ###
+    energy_tot.append(sum([p.kin_energy for p in particles]))
 
 # plot de figuur van de kinetische energie als functie van de tijd. 
-### YOUR CODE HERE ###
+plt.figure()
+plt.plot(np.arange(0,100),energy_tot)
+change = 1e-14
+plt.ylim(20-change,20+change)
+plt.show()
 ```
 
 ```{exercise} 
@@ -337,8 +354,7 @@ Als je heel nauwkeurig naar de waarde voor de totale kinetische energie kijkt, d
 ```
 
 ```{solution} ex-recap-8
-Jouw antwoord hier...
-### YOUR CODE HERE ###
+Het verschil is te zien bij $\pm 10^{-14}$, dit kan komen daardat, zelfs bij hele kleine DT, de vergelijkingen nog steeds benaderingen zijn. Ook bij zulke kleine fouten zou het komen door de compilatie van python float64 net niet helemaal goed zijn.
 ```
 
 
@@ -359,9 +375,8 @@ def handle_collisions(particles):
                 ignore_list.append(p2)
 ```
 
-```{exercise} Controleren van beperkingen 🌶 
-:label: ex-recap-10
-
+```{exercise} Controleren van beperkingen 🌶
+:label: ex-recap-9
 Leg uit wat deze code precies doet. 
 
 Maak een script waarbij twee deeltjes met dezelfde (absolute) snelheid op een derde deeltje afbewegen en tegelijk zouden botsen.
@@ -370,6 +385,63 @@ Maak een script waarbij twee deeltjes met dezelfde (absolute) snelheid op een de
 - Voor wie een uitdaging wil: maak een grafiek met het aantal botsingen per tijdseenheid. Dit om bovenstaande benadering verder te verantwoorden.
 ```
 
+```{solution} ex-recap-9
+De code voegt elke keer een waarde in de ignore_list als deze een botsing heeft uitgevoerd; er kan dus maar 1 botsing per deeltjes plaatsvinden. Als een bepaald deeltje $p_1,p_2$ in de ignore_lijst zit, zal het deze negeren en door gaan met de loop.
+
+Als je veel deeltjes hebt zal een individuele botsingen minder uitmaken, de kans dat het gebeurd is zeer klein en geeft maar een kleine verandering in de snelheden van de deeltjes t.o.v. een enkele botsing.
+
+```
+
+```python
+def handle_collisions(particles):
+    """ alle onderlinge botsingen afhandelen voor deeltjes in lijst """
+    num_botsingen = 0
+    num_particles = len(particles)
+    for i in range(num_particles):
+        for j in range(i+1, num_particles):
+            if collide_detection(particles[i], particles[j]):
+                particle_collision(particles[i], particles[j])
+                num_botsingen += 1
+    return num_botsingen
+
+def take_time_step(particles):
+    for p in particles:
+        p.update_position()
+        
+    num_botsingen = handle_collisions(particles)
+    handle_walls(particles)
+    return num_botsingen
+
+
+from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
+
+fig, ax = plt.subplots()
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_xlim(-BOX_SIZE_0/2, BOX_SIZE_0/2)
+ax.set_ylim(-BOX_SIZE_0/2, BOX_SIZE_0/2)
+ax.set_aspect('equal')
+
+dot, = ax.plot([], [], 'ro', ms=13);
+botsingen = []
+def init():
+    dot.set_data([], [])
+    return dot,
+
+def update(frame):
+    num_botsingen = take_time_step(particles)
+    botsingen.append(num_botsingen)
+    dot.set_data([p.r[0] for p in particles], [p.r[1] for p in particles])
+    return dot,
+
+ani = FuncAnimation(fig, update, frames=100, init_func=init, blit=True, interval=50)
+HTML(ani.to_jshtml())
+
+plt.figure()
+plt.plot(np.arange(0,100),botsingen)
+plt.show()
+```
 
 ````{tip} Nog sneller
 Er is een manier om je script nog sneller te maken. 
@@ -514,6 +586,7 @@ for i in range(N-1):
     pos = Box_length_0*np.random.uniform(-1,1,2)
     particles.append(ParticleClass(m=1.0, v=[vx, vy], r = pos, R=.5,c='blue')) 
 
+# Maak het grote deeltje aan en zit hem op plek [0,0]
 particles.append(ParticleClass(m=20.0, v=[0, 0], r = [0, 0], R=.5,c='red')) 
 
 ```
@@ -526,7 +599,7 @@ Voeg voor deze regel goede metadata toe.
 ```
 
 ```{solution} ex-brownian-1
-### YOUR CODE HERE ###
+Je maakt het grote deeltje aan, wat $m=20$ heeft, dus 20 keer groter dan de andere deeltjes en zet hem op de oorsprong ($r=[0,0]$)
 ```
 
 
@@ -549,9 +622,9 @@ plt.ylim(-Box_length_0,Box_length_0)
 
 for particle, particle_object in enumerate(particles):
     plt.plot(particle_object.r[0],particle_object.r[1],color=particle_object.c,marker='.')
-    # plt.arrow(particle_object.r[0],particle_object.r[1], 
-    #           particle_object.v[0],particle_object.v[1], 
-    #           head_width=0.05, head_length=0.1, color='red')
+    plt.arrow(particle_object.r[0],particle_object.r[1],
+              particle_object.v[0],particle_object.v[1], 
+              head_width=0.05, head_length=0.1, color='red')
 plt.show()
 
 ```
@@ -565,7 +638,7 @@ Hoe wordt er voor gezorgd dat de snelheid van elk deeltje gelijk is?
 ```
 
 ```{solution} ex-brownian-2
-### YOUR CODE HERE ###
+De code laat zijn hoe de deeltjes bewegen je de simulatie zal runnen. Er zal dan een verplaatsing van $\vec{v_0}$ plaatsvinden. Zoals eerder geldt er nog steeds $v_x^2+v_y^2=v_0^2$
 ```
 
 We gaan nu de functies van de simulatie weer aanroepen:
