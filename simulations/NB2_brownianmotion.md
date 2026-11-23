@@ -807,7 +807,8 @@ ani.save("deeltjes.gif", writer="pillow", fps=20)
 ```
 
 ```{solution} ex-brownian-3
-### YOUR CODE HERE ###
+- De beweging van het grote deeltjes is gecontroleerder zonder teveel beïnvloedt te worden door kleine botsingen, maar het patroon is willekeurig met elke keer een willekeurig richting en pad dat veel kan verschillen
+- Het grote deeltje lijkt een vrij recht pad te volgen door de andere deeltjes heen
 ```
 
 
@@ -821,7 +822,176 @@ Plot hieronder het aantal botsingen als functie van de tijd.
 ```
 
 ```python
-### YOUR CODE HERE ###
+class ParticleClass:
+    # Het maken van het deeltje
+    def __init__(self, m, v, r, R, c):
+        self.m = m                         
+        self.v = np.array(v, dtype=float)  
+        self.r = np.array(r, dtype=float)  
+        self.R = R  
+        self.c = c
+
+    # Het updaten van de positie, eventueel met zwaartekracht
+    def update_position(self):
+        self.r += self.v * dt #+ 1/2 * a * dt**2  
+              
+    # Harde wand
+    def boxcollision(self):
+        wall_colls = 0
+        if abs(self.r[0]) + self.R > Box_length: 
+            self.v[0] = -self.v[0]                                  # Omdraaien van de snelheid
+            self.r[0] = np.sign(self.r[0]) * (Box_length - self.R)  # Zet terug net binnen box
+            wall_colls += 1
+        if abs(self.r[1]) + self.R > Box_length: 
+            self.v[1] = -self.v[1]     
+            self.r[1] = np.sign(self.r[1]) * (Box_length - self.R) 
+            wall_colls += 1
+        return wall_colls
+            
+    @property
+    def momentum(self):
+        return self.m * self.v
+    
+    @property
+    def kin_energy(self):
+        return 1/2 * self.m * np.dot(self.v, self.v)
+
+def collide_detection(self, other):
+    dx = self.r[0] - other.r[0]
+    dy = self.r[1] - other.r[1]
+    rr = self.R + other.R
+    return  dx**2+dy**2 < rr**2 
+    
+def boxcollision(self):
+    wall_colls = 0
+    if abs(self.r[0]) + self.R > Box_length: 
+        self.v[0] = -self.v[0]                                  # Omdraaien van de snelheid
+        self.r[0] = np.sign(self.r[0]) * (Box_length - self.R)  # Zet terug net binnen box
+        wall_colls += 1
+    if abs(self.r[1]) + self.R > Box_length: 
+        self.v[1] = -self.v[1]     
+        self.r[1] = np.sign(self.r[1]) * (Box_length - self.R) 
+        wall_colls += 1
+    return wall_colls
+    
+def particle_collision(p1: ParticleClass, p2: ParticleClass):
+    """ past snelheden aan uitgaande van overlap """
+    m1, m2 = p1.m, p2.m
+    delta_r = p1.r - p2.r
+    delta_v = p1.v - p2.v
+    dot_product = np.dot(delta_r, delta_v)
+    
+    # Als deeltjes van elkaar weg bewegen dan geen botsing
+    if dot_product >= 0: # '='-teken voorkomt ook problemen als delta_r == \vec{0}
+        return 0
+    
+    distance_squared = np.dot(delta_r, delta_r) 
+    # Botsing oplossen volgens elastische botsing in 2D
+    p1.v -= 2 * m2 / (m1 + m2) * dot_product / distance_squared * delta_r
+    p2.v += 2 * m1 / (m1 + m2) * dot_product / distance_squared * delta_r
+    
+    return 1 # botsing => counter + 1
+
+def handle_collisions(particles):
+    """ alle onderlinge botsingen afhandelen voor deeltjes in lijst """
+    num_particles = len(particles)
+    p_colls = 0
+    for i in range(num_particles):
+        for j in range(i+1, num_particles):
+            if collide_detection(particles[i], particles[j]):
+                p_colls += particle_collision(particles[i], particles[j])
+    return p_colls
+
+# Aanmaken van deeltjes
+for i in range(N-1):
+    vx = np.random.uniform(-v_0,v_0)
+    vy = np.random.choice([-1, 1])*np.sqrt(v_0**2-vx**2)        
+    pos = Box_length_0*np.random.uniform(-1,1,2)
+    particles.append(ParticleClass(m=1.0, v=[vx, vy], r = pos, R=.5,c='blue')) 
+
+# Maak het grote deeltje aan en zit hem op plek [0,0]
+particles.append(ParticleClass(m=20.0, v=[0, 0], r = [0, 0], R=.5,c='red')) 
+
+# ---- tracking arrays ----
+track_x, track_y = [], []          # zwaar deeltje (bijv. particles[N-1])
+track_x2, track_y2 = [], []        # tweede deeltje (bijv. particles[0])
+botsingen = []
+
+# ---- figure setup ----
+#fig, ax = plt.subplots()
+#ax.set_xlabel('x')
+#ax.set_ylabel('y')
+#ax.set_xlim(-Box_size_0/2, Box_size_0/2)
+#ax.set_ylim(-Box_size_0/2, Box_size_0/2)
+#ax.set_aspect('equal')
+
+# alle deeltjes als rode punten
+dots, = ax.plot([], [], 'ro', ms=18)
+
+# de twee deeltjes extra benadrukken
+#heavy_dot, = ax.plot([], [], 'ko', ms=20)   # zwaar
+#light_dot, = ax.plot([], [], 'bo', ms=18)   # tweede (blauw)
+
+# ---- NIEUW: lijnen voor de paden ----
+#heavy_path, = ax.plot([], [], 'k-', lw=1, alpha=0.8)
+#light_path, = ax.plot([], [], 'b-', lw=1, alpha=0.8)
+
+def init():
+    dots.set_data([], [])
+    heavy_dot.set_data([], [])
+    light_dot.set_data([], [])
+    heavy_path.set_data([], [])
+    light_path.set_data([], [])
+    return dots, heavy_dot, light_dot, heavy_path, light_path
+
+def update(frame):
+    counter = 0
+    for p in particles:
+        p.update_position()
+        counter += p.boxcollision()
+    counter += handle_collisions(particles)
+    
+    botsingen.append(counter)
+    
+    # ---- track punten ----
+    track_x.append(particles[N-1].r[0])
+    track_y.append(particles[N-1].r[1])
+    
+    track_x2.append(particles[0].r[0])
+    track_y2.append(particles[0].r[1])
+    
+    # ---- update alle deeltjes ----
+    xs = [p.r[0] for p in particles]
+    ys = [p.r[1] for p in particles]
+    dots.set_data(xs, ys)
+    
+    # ---- update de 2 highlights ----
+    heavy_dot.set_data([track_x[-1]], [track_y[-1]])
+    light_dot.set_data([track_x2[-1]], [track_y2[-1]])
+    
+    # ---- NIEUW: update de paden ----
+    heavy_path.set_data(track_x, track_y)
+    light_path.set_data(track_x2, track_y2)
+    
+    return dots, heavy_dot, light_dot, heavy_path, light_path
+
+ani = FuncAnimation(fig, update, frames=400, init_func=init, blit=True, interval=50)
+HTML(ani.to_jshtml())
+
+plt.figure()
+plt.plot(np.arange(0,len(botsingen)),botsingen)
+plt.ylabel("botsingen")
+plt.xlabel("tijdstap")
+plt.show()
+# writer = FFMpegWriter(
+#     fps=30,
+#     metadata=dict(artist='Jij'),
+#     bitrate=5000
+# )
+
+# ani.save("deeltjes_hd.mp4", writer=writer, dpi=200)
+#ani.save("deeltjes.gif", writer="pillow", fps=20)
+
 ```
 
 ```{warning} 🌶 Let op!
@@ -847,8 +1017,139 @@ Maar voor een histogram hebben we veel deeltjes nodig.
 
 
 ```python tags=["NB2_brownian_distance_histogram"] editable=true slideshow={"slide_type": ""}
-### YOUR CODE HERE ###
+# Maken van de ParticleClass
+import numpy as np
+import matplotlib.pyplot as plt
 
+class ParticleClass:
+    # Het maken van het deeltje
+    def __init__(self, m, v, r, R, c):
+        self.m = m                         
+        self.v = np.array(v, dtype=float)  
+        self.r = np.array(r, dtype=float)  
+        self.R = R  
+        self.c = c
+
+    # Het updaten van de positie, eventueel met zwaartekracht
+    def update_position(self):
+        self.r += self.v * dt #+ 1/2 * a * dt**2  
+
+    def boxcollision(self):
+        if abs(self.r[0]) + self.R > Box_length: 
+            self.v[0] = -self.v[0]                                  # Omdraaien van de snelheid
+            self.r[0] = np.sign(self.r[0]) * (Box_length - self.R)  # Zet terug net binnen box
+        if abs(self.r[1]) + self.R > Box_length: 
+            self.v[1] = -self.v[1]     
+            self.r[1] = np.sign(self.r[1]) * (Box_length - self.R)
+                    
+    @property
+    def momentum(self):
+        return self.m * self.v
+    
+    @property
+    def kin_energy(self):
+        return 1/2 * self.m * np.dot(self.v, self.v)
+
+def collide_detection(self, other):
+    dx = self.r[0] - other.r[0]
+    dy = self.r[1] - other.r[1]
+    rr = self.R + other.R
+    return  dx**2+dy**2 < rr**2 
+
+def particle_collision(p1: ParticleClass, p2: ParticleClass):
+    """ past snelheden aan uitgaande van overlap """
+    m1, m2 = p1.m, p2.m
+    delta_r = p1.r - p2.r
+    delta_v = p1.v - p2.v
+    dot_product = np.dot(delta_r, delta_v)
+    
+    # Als deeltjes van elkaar weg bewegen dan geen botsing
+    if dot_product >= 0: # '='-teken voorkomt ook problemen als delta_r == \vec{0}
+        return
+    
+    distance_squared = np.dot(delta_r, delta_r) 
+    # Botsing oplossen volgens elastische botsing in 2D
+    p1.v -= 2 * m2 / (m1 + m2) * dot_product / distance_squared * delta_r
+    p2.v += 2 * m1 / (m1 + m2) * dot_product / distance_squared * delta_r
+        
+def handle_collisions(particles):
+    """ alle onderlinge botsingen afhandelen voor deeltjes in lijst """
+    num_particles = len(particles)
+    for i in range(num_particles):
+        for j in range(i+1, num_particles):
+            if collide_detection(particles[i], particles[j]):
+                particle_collision(particles[i], particles[j])  
+
+```
+
+```python
+# Aanmaken van de randvoorwaarden en initiele condities
+Box_size_0 = 90 # 9 keer zo groot
+Box_length_0 = Box_size_0/2
+Box_length = Box_length_0     # De grootte van de box kan wijzigen!
+
+# Particles
+dt = 0.1
+particles = []
+N = 361
+v_0 = 1
+
+dt = 0.04
+
+# Aanmaken van deeltjes
+for i in range(N-1):
+    vx = np.random.uniform(-v_0,v_0)
+    vy = np.random.choice([-1, 1])*np.sqrt(v_0**2-vx**2)        
+    pos = Box_length_0*np.random.uniform(-1,1,2)
+    particles.append(ParticleClass(m=1.0, v=[vx, vy], r = pos, R=.5,c='blue')) 
+
+# Maak het grote deeltje aan en zit hem op plek [0,0]
+particles.append(ParticleClass(m=20.0, v=[0, 0], r = [0, 0], R=.5,c='red')) 
+```
+
+```python
+# tracken van het zware deeltje
+track_x = []
+track_y = []
+
+# tracken van de andere deeltjes
+tracks_x = [[] for _ in range(N - 1)]
+tracks_y = [[] for _ in range(N - 1)]
+
+
+for i in range(400):
+    
+    for p in particles:        
+        p.update_position()    # Update positie        
+        p.boxcollision()         # Wandbotsing werkt per deeltje
+        
+    handle_collisions(particles)
+    
+    track_x.append(particles[N-1].r[0])
+    track_y.append(particles[N-1].r[1])
+    
+    for j in range(N-1):
+        tracks_x[j].append(particles[j].r[0])
+        tracks_y[j].append(particles[j].r[1])
+
+x_arr = np.asarray(tracks_x)
+y_arr = np.asarray(tracks_y)
+
+# Voeg een kolom met NaN toe zodat matplotlib de banen niet aan elkaar plakt
+nan_col = np.full((x_arr.shape[0], 1), np.nan)
+x_flat = np.hstack([x_arr, nan_col]).ravel()
+y_flat = np.hstack([y_arr, nan_col]).ravel()
+
+plt.figure()
+plt.plot(x_flat, y_flat, "b", lw=0.3, alpha=0.6)  # Slechts 1 plot-call voor alle lichte deeltjes
+plt.plot(track_x, track_y, "r", lw=5)             # Zware deeltje bovenop
+plt.show()
+
+plt.figure()
+plt.plot(track_x,track_y,'r', lw=5)
+plt.plot(x_flat, y_flat, "b", lw=0.3)
+    
+plt.show()
 ```
 
 En nu we toch bezig zijn met twee verschillende deeltjes.... 
